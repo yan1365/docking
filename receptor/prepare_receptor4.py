@@ -2,7 +2,7 @@
 #
 # 
 #
-# $Header: /opt/cvs/python/packages/share1.5/AutoDockTools/Utilities24/prepare_receptor4.py,v 1.13 2010/01/25 23:37:14 rhuey Exp $
+# $Header: /mnt/raid/services/cvs/python/packages/share1.5/AutoDockTools/Utilities24/prepare_receptor4.py,v 1.13.6.1 2015/08/26 22:45:31 sanner Exp $
 #
 import os 
 
@@ -58,11 +58,12 @@ if __name__ == '__main__':
         print "        [-M]  interactive "
         print "             (default is 'automatic': outputfile is written with no further user input)"
         print "        [-d dictionary_filename] file to contain receptor summary information"
+        print "        [-w]   assign each receptor atom a unique name: newname is original name plus its index(1-based)"
 
 
     # process command arguments
     try:
-        opt_list, args = getopt.getopt(sys.argv[1:], 'r:vo:A:Cp:U:eM:d:')
+        opt_list, args = getopt.getopt(sys.argv[1:], 'r:vo:A:Cp:U:eM:d:wh')
 
     except getopt.GetoptError, msg:
         print 'prepare_receptor4.py: %s' %msg
@@ -91,8 +92,10 @@ if __name__ == '__main__':
     delete_single_nonstd_residues = None
     #-d dictionary
     dictionary = None
+    #-w 
+    unique_atom_names = False
 
-    #'r:vo:A:Cp:U:eMh'
+    #'r:vo:A:Cp:U:eM:d:wh'
     for o, a in opt_list:
         if o in ('-r', '--r'):
             receptor_filename = a
@@ -127,6 +130,9 @@ if __name__ == '__main__':
         if o in ('-d', '--d'):
             dictionary  = a
             if verbose: print 'set dictionary to ', dictionary
+        if o in ('-w', '--w'):
+            unique_atom_names = True
+            if verbose: print 'set unique_atom_names to ', unique_atom_names
         if o in ('-h', '--'):
             usage()
             sys.exit()
@@ -142,8 +148,23 @@ if __name__ == '__main__':
     mols = Read(receptor_filename)
     if verbose: print 'read ', receptor_filename
     mol = mols[0]
+    if unique_atom_names:  # added to simplify setting up covalent dockings 8/2014
+        for at in mol.allAtoms:
+            if mol.allAtoms.get(at.name) >1:
+                at.name = at.name + str(at._uniqIndex +1)
+        if verbose:
+            print "renamed %d atoms: each newname is the original name of the atom plus its (1-based) uniqIndex" %(len(mol.allAtoms))        
     preserved = {}
+    has_autodock_element = False
     if charges_to_add is not None and preserve_charge_types is not None:
+        if hasattr(mol, 'allAtoms') and not hasattr(mol.allAtoms[0], 'autodock_element'):
+            file_name, file_ext = os.path.splitext(receptor_filename)
+            if file_ext == '.pdbqt':
+                has_autodock_element = True
+        if preserve_charge_types is not None and has_autodock_element==False:
+            print 'prepare_receptor4: input format does not have autodock_element SO unable to preserve charges on ' + preserve_charge_types
+            print 'exiting...'
+            sys.exit()  
         preserved_types = preserve_charge_types.split(',') 
         if verbose: print "preserved_types=", preserved_types
         for t in preserved_types:
@@ -165,6 +186,10 @@ if __name__ == '__main__':
                 mol = m
                 if verbose: print "mol set to ", ctr, "th molecule with", len(mol.allAtoms), "atoms"
     mol.buildBondsByDistance()
+    alt_loc_ats = mol.allAtoms.get(lambda x: "@" in x.name)
+    len_alt_loc_ats = len(alt_loc_ats)
+    if len_alt_loc_ats:
+        print "WARNING!", mol.name, "has",len_alt_loc_ats, ' alternate location atoms!\nUse prepare_pdb_split_alt_confs.py to create pdb files containing a single conformation.\n'
 
     if verbose:
         print "setting up RPO with mode=", mode,
@@ -187,3 +212,4 @@ if __name__ == '__main__':
 
 # To execute this command type:
 # prepare_receptor4.py -r pdb_file -o outputfilename -A checkhydrogens 
+
