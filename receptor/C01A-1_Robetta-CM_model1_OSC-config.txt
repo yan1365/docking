@@ -1,0 +1,12 @@
+receptor = /fs/ess/PAS1855/users/yan1365/mol_docking/receptor/C01A-1_Robetta-CM_model1.pdbqt
+
+center_x = -12.906
+center_y = -14.121
+center_z = 14.879
+size_x = 64
+size_y = 72
+size_z = 48
+
+exhaustiveness = 16
+cpu = 40
+num_modes=5

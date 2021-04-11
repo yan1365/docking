@@ -1,0 +1,11 @@
+receptor = /home/yan1365/mol_docking/receptor/C01A-1_ModWeb.pdbqt
+
+center_x = 56.632
+center_y = 14.377
+center_z = 4.424
+size_x = 48
+size_y = 42
+size_z = 48
+
+exhaustiveness = 16
+num_modes=5
